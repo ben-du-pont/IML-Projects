@@ -126,3 +126,5 @@ if __name__ == "__main__":
     avg_RMSE = average_LR_RMSE(X, y, lambdas, n_folds)
     # Save results in the required format
     np.savetxt("./results.csv", avg_RMSE, fmt="%.12f")
+
+# hello
