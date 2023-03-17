@@ -31,14 +31,9 @@ def fit(X, y, lam):
 
     # TODO: Enter your code here
 
-    # Create a Ridge regression model with the specified regularization hyperparameter
-    ridge_reg = Ridge(alpha=lam)
-
-    # Fit the model on the training data
-    ridge_reg.fit(X, y)
-
-    # Get the weights of the fitted model
-    w = ridge_reg.coef_
+    w = Ridge(alpha=lam)
+    w.fit(X,y)
+    w = w.coef_
 
     assert w.shape == (13,)
     return w
