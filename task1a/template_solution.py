@@ -31,9 +31,7 @@ def fit(X, y, lam):
 
     # TODO: Enter your code here
 
-    w = Ridge(alpha=lam)
-    w.fit(X,y)
-    w = w.coef_
+    w = Ridge(alpha=lam).fit(X,y).coef_
 
     assert w.shape == (13,)
     return w
@@ -59,8 +57,8 @@ def calculate_RMSE(w, X, y):
     RMSE = 0
     # TODO: Enter your code here
 
-    y_predict = np.dot(X,w)
-    RMSE = mean_squared_error(y, y_predict)**0.5
+    y_predict = X @ w # np.dot(X,w)
+    RMSE = mean_squared_error(y, y_predict, squared=False)
 
     assert np.isscalar(RMSE)
     return RMSE
@@ -89,12 +87,11 @@ def average_LR_RMSE(X, y, lambdas, n_folds):
 
     kf = KFold(n_folds)
 
-    for i, (train_idx, test_idx) in enumerate(kf.split(X)):
+    for i, (train_idx, test_idx) in enumerate(kf.split(X,y)):
 
         for j, lam in enumerate(lambdas):
             w = fit(X[train_idx],y[train_idx],lam)
-            rmse = calculate_RMSE(w, X[test_idx], y[test_idx])
-            RMSE_mat[i,j] = rmse
+            RMSE_mat[i][j] = calculate_RMSE(w, X[test_idx], y[test_idx])
         
 
     avg_RMSE = np.mean(RMSE_mat, axis=0)
