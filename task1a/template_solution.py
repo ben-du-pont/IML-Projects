@@ -56,7 +56,6 @@ def calculate_RMSE(w, X, y):
 
     RMSE = 0
     # TODO: Enter your code here
-    print(w)
     y_predict = X @ w # np.dot(X,w)
     RMSE = mean_squared_error(y, y_predict, squared=False)
 
