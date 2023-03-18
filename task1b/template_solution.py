@@ -36,7 +36,7 @@ def transform_data(X):
         X_transformed[i,6] = X[i,1]**2
         X_transformed[i,7] = X[i,2]**2
         X_transformed[i,8] = X[i,3]**2
-        X_transformed[i,9] = X[i,4]**3
+        X_transformed[i,9] = X[i,4]**2
         X_transformed[i,10] = np.exp(X[i,0])
         X_transformed[i,11] = np.exp(X[i,1])
         X_transformed[i,12] = np.exp(X[i,2])
@@ -71,7 +71,7 @@ def fit(X, y):
     X_transformed = transform_data(X)
     # TODO: Enter your code here
 
-    Regression_model_linear = LinearRegression()
+    Regression_model_linear = LinearRegression(fit_intercept = False)
     Regression_model_linear.fit(transform_data(X), y)
     w = Regression_model_linear.coef_
 
