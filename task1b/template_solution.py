@@ -25,6 +25,29 @@ def transform_data(X):
     """
     X_transformed = np.zeros((700, 21))
     # TODO: Enter your code here
+    for i in range(700):
+        X_transformed[i,0] = X[i,0]
+        X_transformed[i,1] = X[i,1]
+        X_transformed[i,2] = X[i,2]
+        X_transformed[i,3] = X[i,3]
+        X_transformed[i,4] = X[i,4]
+        X_transformed[i,5] = X[i,0]**2
+        X_transformed[i,6] = X[i,1]**2
+        X_transformed[i,7] = X[i,2]**2
+        X_transformed[i,8] = X[i,3]**2
+        X_transformed[i,9] = X[i,4]**3
+        X_transformed[i,10] = np.exp(X[i,0])
+        X_transformed[i,11] = np.exp(X[i,1])
+        X_transformed[i,12] = np.exp(X[i,2])
+        X_transformed[i,13] = np.exp(X[i,3])
+        X_transformed[i,14] = np.exp(X[i,4])
+        X_transformed[i,15] = np.cos(X[i,0])
+        X_transformed[i,16] = np.cos(X[i,1])
+        X_transformed[i,17] = np.cos(X[i,2])
+        X_transformed[i,18] = np.cos(X[i,3])
+        X_transformed[i,19] = np.cos(X[i,4])
+        X_transformed[i,20] = 1
+        
     assert X_transformed.shape == (700, 21)
     return X_transformed
 
