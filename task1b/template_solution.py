@@ -71,9 +71,9 @@ def fit(X, y):
     X_transformed = transform_data(X)
     # TODO: Enter your code here
 
-    Regression_model_linear = Ridge(10, fit_intercept = False, positive=False)
-    Regression_model_linear.fit(transform_data(X), y)
-    w = Regression_model_linear.coef_
+    ridge_reg = Ridge(325, fit_intercept = False, positive=False)
+    ridge_reg.fit(transform_data(X), y)
+    w = ridge_reg.coef_
 
     assert w.shape == (21,)
     return w
