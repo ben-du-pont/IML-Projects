@@ -32,11 +32,11 @@ def transform_data(X):
         X_transformed[i,2] = X[i,2]
         X_transformed[i,3] = X[i,3]
         X_transformed[i,4] = X[i,4]
-        X_transformed[i,5] = X[i,0]**2
-        X_transformed[i,6] = X[i,1]**2
-        X_transformed[i,7] = X[i,2]**2
-        X_transformed[i,8] = X[i,3]**2
-        X_transformed[i,9] = X[i,4]**2
+        X_transformed[i,5] = np.square(X[i,0])
+        X_transformed[i,6] = np.square(X[i,1])
+        X_transformed[i,7] = np.square(X[i,2])
+        X_transformed[i,8] = np.square(X[i,3])
+        X_transformed[i,9] = np.square(X[i,4])
         X_transformed[i,10] = np.exp(X[i,0])
         X_transformed[i,11] = np.exp(X[i,1])
         X_transformed[i,12] = np.exp(X[i,2])
