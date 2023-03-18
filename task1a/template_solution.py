@@ -56,7 +56,7 @@ def calculate_RMSE(w, X, y):
 
     RMSE = 0
     # TODO: Enter your code here
-
+    print(w)
     y_predict = X @ w # np.dot(X,w)
     RMSE = mean_squared_error(y, y_predict, squared=False)
 
@@ -91,7 +91,7 @@ def average_LR_RMSE(X, y, lambdas, n_folds):
 
         for j, lam in enumerate(lambdas):
             w = fit(X[train_idx],y[train_idx],lam)
-            RMSE_mat[i][j] = calculate_RMSE(w, X[test_idx], y[test_idx])
+            RMSE_mat[i,j] = calculate_RMSE(w, X[test_idx], y[test_idx])
         
 
     avg_RMSE = np.mean(RMSE_mat, axis=0)
