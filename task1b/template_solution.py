@@ -3,7 +3,7 @@
 # First, we import necessary libraries:
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge
 
 
 def transform_data(X):
@@ -71,7 +71,7 @@ def fit(X, y):
     X_transformed = transform_data(X)
     # TODO: Enter your code here
 
-    Regression_model_linear = LinearRegression(fit_intercept = False, positive=False)
+    Regression_model_linear = Ridge(10, fit_intercept = False, positive=False)
     Regression_model_linear.fit(transform_data(X), y)
     w = Regression_model_linear.coef_
 
