@@ -32,6 +32,7 @@ def fit(X, y, lam):
     # TODO: Enter your code here
 
     w = Ridge(alpha=lam).fit(X,y).coef_
+    print(Ridge(alpha=lam).fit(X,y).intercept_)
 
     assert w.shape == (13,)
     return w

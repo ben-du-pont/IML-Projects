@@ -47,7 +47,7 @@ def transform_data(X):
         X_transformed[i,17] = np.cos(X[i,2])
         X_transformed[i,18] = np.cos(X[i,3])
         X_transformed[i,19] = np.cos(X[i,4])
-        X_transformed[i,20] = 1
+        X_transformed[i,20] = 1.0
 
     assert X_transformed.shape == (700, 21)
     return X_transformed
@@ -71,7 +71,7 @@ def fit(X, y):
     X_transformed = transform_data(X)
     # TODO: Enter your code here
 
-    Regression_model_linear = LinearRegression(fit_intercept = False)
+    Regression_model_linear = LinearRegression(fit_intercept = False, positive=False)
     Regression_model_linear.fit(transform_data(X), y)
     w = Regression_model_linear.coef_
 
@@ -92,4 +92,4 @@ if __name__ == "__main__":
     # The function retrieving optimal LR parameters
     w = fit(X, y)
     # Save results in the required format
-    np.savetxt("task1b/results.csv", w, fmt="%.12f")
+    np.savetxt("./task1b/results.csv", w, fmt="%.12f")
