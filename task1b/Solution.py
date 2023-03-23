@@ -71,9 +71,7 @@ def fit(X, y):
     X_transformed = transform_data(X)
     # TODO: Enter your code here
 
-    ridge_reg = Ridge(325, fit_intercept = False, positive=False)
-    ridge_reg.fit(transform_data(X), y)
-    w = ridge_reg.coef_
+    w = Ridge(325, fit_intercept = False, positive=False).fit(X_transformed, y).coef_
 
     assert w.shape == (21,)
     return w
