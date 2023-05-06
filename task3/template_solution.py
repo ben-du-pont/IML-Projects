@@ -11,7 +11,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torchvision.models import ResNet50_Weights, resnet50
+from torchvision.models.inception import inception_v3, Inception_V3_Weights
 from torch import optim
+from torch.utils.data import random_split, DataLoader
 
 import matplotlib.pyplot as plt
 
@@ -27,16 +29,17 @@ def generate_embeddings():
     """
     # TODO: define a transform to pre-process the images
     train_transforms = transforms.Compose([
-    transforms.Resize((200,400)),  # Resize the image to 256x256 pixels
-    #transforms.CenterCrop(200),  # Crop the image to 224x224 pixels around the center
+    transforms.Resize(300),  # Resize the image to 256x256 pixels
+    # transforms.CenterCrop((207,304)),  
     transforms.ToTensor(),  # Convert the image to a PyTorch tensor
-    ])
+    transforms.Normalize(mean=[155.0943466611967, 131.5264298810437, 104.89696331452755], std=[59.9749938721941, 63.551105459971524, 68.21740046578981])])
 
     train_dataset = datasets.ImageFolder(root="task3/dataset/", transform=train_transforms)
     # Hint: adjust batch_size and num_workers to your PC configuration, so that you don't 
     # run out of memory
+    batch_size = 32
     train_loader = DataLoader(dataset=train_dataset,
-                              batch_size=32,
+                              batch_size=batch_size,
                               shuffle=False,
                               pin_memory=True, num_workers=8)
 
@@ -44,19 +47,22 @@ def generate_embeddings():
     #  more info here: https://pytorch.org/vision/stable/models.html)
 
     model = resnet50(weights=ResNet50_Weights.DEFAULT)
-    model.eval()  # Set the model to evaluation mode
+    # model = inception_v3(weights=Inception_V3_Weights.DEFAULT)
 
-    
-
+    embedding_size = 2048
 
     num_images = len(train_dataset)
-    # embeddings = np.zeros((num_images, embedding_size))
+    embeddings = np.zeros((num_images, embedding_size))
 
     # TODO: Use the model to extract the embeddings. Hint: remove the last layers of the 
-    # model to access the embeddings the model generates. 
+    # model to access the embeddings the model generates.
+
     modules = list(model.children())[:-1]
     model = torch.nn.Sequential(*modules)
+
     model.to(device)
+    model.eval()
+
 
     # i = 0
     # for images, _ in train_loader:
@@ -68,16 +74,15 @@ def generate_embeddings():
     #     i = i + 1
     #     break
     
-    embeddings = []
     iter = 0
     print(iter)
     for images, _ in train_loader:
         print(iter)
         with torch.no_grad():
+            images = images.to(device)
             features = model(images)
-            embeddings.append(features)
+            embeddings[iter*batch_size:(iter+1)*batch_size] = np.squeeze(features, axis=(2,3)).cpu()
         iter += 1
-    embeddings = torch.cat(embeddings, dim=0)
 
     np.save('task3/dataset/embeddings.npy', embeddings)
 
@@ -104,8 +109,8 @@ def get_data(file, train=True):
     embeddings = np.load('task3/dataset/embeddings.npy')
     # TODO: Normalize the embeddings across the dataset
 
-    # norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
-    # embeddings = embeddings / norm
+    norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
+    embeddings = embeddings / norm
 
     file_to_embedding = {}
     for i in range(len(filenames)):
@@ -156,10 +161,11 @@ class Net(nn.Module):
         The constructor of the model.
         """
         super().__init__()
-        # Define the convolutional layers
-        self.fc1 = nn.Linear(3000, 512)
-        self.fc2 = nn.Linear(512, 128)
-        self.fc3 = nn.Linear(128, 1)
+        self.fc1 = nn.Linear(6144, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 1)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         """
@@ -169,11 +175,13 @@ class Net(nn.Module):
 
         output: x: torch.Tensor, the output of the model
         """
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, p=0.5)
-        x = F.relu(self.fc2(x))
-        x = F.dropout(x, p=0.5)
+        x.to(device)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        x = self.relu(x)
         x = self.fc3(x)
+        x = self.sigmoid(x)
 
         return x
 
@@ -186,6 +194,15 @@ def train_model(train_loader):
     
     output: model: torch.nn.Module, the trained model
     """
+
+
+    dataset_size = len(train_loader.dataset)
+    val_size = int(0.2 * dataset_size)
+    train_size = dataset_size - val_size
+    train_set, val_set = random_split(train_loader.dataset, [train_size, val_size])
+    train_loader = DataLoader(train_set, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=32, shuffle=True)
+
     model = Net()
     model.train()
     model.to(device)
@@ -196,22 +213,47 @@ def train_model(train_loader):
     # on the validation data before submitting the results on the server. After choosing the 
     # best model, train it on the whole training data.
     
-    optimizer = optim.SGD(model.parameters(), lr=0.01)
-    criterion = nn.BCEWithLogitsLoss()
+    # optimizer = optim.SGD(model.parameters(), lr=0.001)
+    # criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
 
     # TODO: proceed with training
+    
     for epoch in range(n_epochs):
         epoch_loss = 0.0
+        
         for [X, y] in train_loader:
-            
+
             optimizer.zero_grad()
-            y_pred = model(X)
-            loss = criterion(y_pred, y.float().unsqueeze(1))
+            X = X.to(device)
+            y = y.to(device)
+
+            outputs = model(X)
+            loss = criterion(outputs, y.float().unsqueeze(1))
             loss.backward()
             optimizer.step()
-            epoch_loss += loss.item() * X.shape[0]
+            epoch_loss += loss.item()
+
+            
         epoch_loss /= len(train_loader)
-        print(f"Epoch {epoch+1}: loss={epoch_loss:.4f}")
+
+        # Validation loop
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for [X_val, y_val] in val_loader:
+                X_val = X_val.to(device)
+                y_val = y_val.to(device)
+                
+                outputs = model(X_val)
+                loss = criterion(outputs, y_val.float().unsqueeze(1))
+                val_loss += loss.item()
+        
+        val_loss /= len(val_loader)
+
+        print(f"Epoch {epoch+1}: training loss={epoch_loss:.4f}, validation loss={val_loss:.4f}")
 
     # for epoch in range(n_epochs):
 
