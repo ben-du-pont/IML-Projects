@@ -17,6 +17,8 @@ from torch.utils.data import random_split, DataLoader
 
 import matplotlib.pyplot as plt
 
+from image_stats import get_mean_of_pixels
+
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") # MATEO (WINDOWS)
 # device = torch.device("cpu")
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu") # BEN (MAC OS)
@@ -27,11 +29,20 @@ def generate_embeddings():
     the embeddings.
     """
     # TODO: define a transform to pre-process the images
+
+    # mean_red, mean_green, mean_blue, std_red , std_green, std_blue = get_mean_of_pixels()
+    # mean = [mean_red, mean_green, mean_blue]
+    # std = [std_red , std_green, std_blue]
+
+    mean = [0.485, 0.456, 0.406]
+    std = [0.229, 0.224, 0.225]
+
     train_transforms = transforms.Compose([
     transforms.Resize((256,256)),  # Resize the image to 256x256 pixels
     # transforms.CenterCrop((207,304)),  
     transforms.ToTensor(),  # Convert the image to a PyTorch tensor
-    transforms.Normalize(mean=[155.0943466611967, 131.5264298810437, 104.89696331452755], std=[59.9749938721941, 63.551105459971524, 68.21740046578981])])
+    transforms.Normalize(mean=mean, std= std)
+    ])
 
     train_dataset = datasets.ImageFolder(root="task3/dataset/", transform=train_transforms)
     # Hint: adjust batch_size and num_workers to your PC configuration, so that you don't 
@@ -71,7 +82,8 @@ def generate_embeddings():
     #     plt.imshow((images[i].detach().numpy().transpose(1, 2, 0)*255).astype(np.uint8))
     #     plt.show()
     #     i = i + 1
-    #     break
+    #     if i > 10:
+    #         break
     
     iter = 0
     print(iter)
@@ -212,10 +224,10 @@ def train_model(train_loader):
     # on the validation data before submitting the results on the server. After choosing the 
     # best model, train it on the whole training data.
     
-    # optimizer = optim.SGD(model.parameters(), lr=0.001)
+    optimizer = optim.SGD(model.parameters(), lr=0.1)
     # criterion = nn.BCEWithLogitsLoss()
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 
     # TODO: proceed with training
