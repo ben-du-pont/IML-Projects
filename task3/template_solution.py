@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 # device = torch.device("cpu")
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu") # BEN (MAC OS)
 
-
 def generate_embeddings():
     """
     Transform, resize and normalize the images and then use a pretrained model to extract 
@@ -29,7 +28,7 @@ def generate_embeddings():
     """
     # TODO: define a transform to pre-process the images
     train_transforms = transforms.Compose([
-    transforms.Resize(300),  # Resize the image to 256x256 pixels
+    transforms.Resize((256,256)),  # Resize the image to 256x256 pixels
     # transforms.CenterCrop((207,304)),  
     transforms.ToTensor(),  # Convert the image to a PyTorch tensor
     transforms.Normalize(mean=[155.0943466611967, 131.5264298810437, 104.89696331452755], std=[59.9749938721941, 63.551105459971524, 68.21740046578981])])
