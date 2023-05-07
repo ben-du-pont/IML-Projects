@@ -33,9 +33,9 @@ def generate_embeddings():
     std = [0.229, 0.224, 0.225] # from ImageNet dataset
 
     train_transforms = transforms.Compose([
-    transforms.Resize((256,256)),  # Resize the image to 256x256 pixels
-    transforms.ToTensor(),  # Convert the image to a PyTorch tensor
-    transforms.Normalize(mean=mean, std=std)
+    transforms.Resize((256,256)),  # resizes to a 256x256 image
+    transforms.ToTensor(),  # converts to a Pytorch tensor
+    transforms.Normalize(mean=mean, std=std) # normalizes the tensor
     ])
 
     train_dataset = datasets.ImageFolder(root="task3/dataset/", transform=train_transforms)
@@ -50,10 +50,8 @@ def generate_embeddings():
     # TODO: define a model for extraction of the embeddings (Hint: load a pretrained model,
     #  more info here: https://pytorch.org/vision/stable/models.html)
 
-    #to explain
-    model = resnet50(weights=ResNet50_Weights.DEFAULT)
-
-    embedding_size = 2048 #to explain
+    model = resnet50(weights=ResNet50_Weights.DEFAULT) # load a pretrained model --> ResNet50
+    embedding_size = 2048 # ResNet50 final layer feature vector size is 2048
 
     num_images = len(train_dataset)
     embeddings = np.zeros((num_images, embedding_size))
@@ -61,14 +59,12 @@ def generate_embeddings():
     # TODO: Use the model to extract the embeddings. Hint: remove the last layers of the 
     # model to access the embeddings the model generates.
 
-    #to explain
-    modules = list(model.children())[:-1]
-    model = torch.nn.Sequential(*modules)
+    model = torch.nn.Sequential(*list(model.children())[:-1]) # takes all layers except the last one and build the model
 
     model.to(device)
     model.eval()
     
-    #to explain
+    # use ResNet50 model to extract feature embeddings and then store them
     iter = 0
     print(iter)
     for images, _ in train_loader:
@@ -76,7 +72,7 @@ def generate_embeddings():
         with torch.no_grad():
             images = images.to(device)
             features = model(images)
-            embeddings[iter*batch_size:(iter+1)*batch_size] = np.squeeze(features, axis=(2,3)).cpu()
+            embeddings[iter*batch_size:(iter+1)*batch_size] = np.squeeze(features, axis=(2,3)).cpu() # np.squeeze to remove dim of size 1 from features dim=(64, 2048, 1, 1)
         iter += 1
 
     np.save('task3/dataset/embeddings.npy', embeddings)
@@ -104,8 +100,8 @@ def get_data(file, train=True):
     embeddings = np.load('task3/dataset/embeddings.npy')
     # TODO: Normalize the embeddings across the dataset
 
-    norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
-    embeddings = embeddings / norm
+    norm = np.linalg.norm(embeddings, axis=1, keepdims=True) # calculate Euclydian norm
+    embeddings = embeddings / norm # normalize
 
     file_to_embedding = {}
     for i in range(len(filenames)):
@@ -147,7 +143,7 @@ def create_loader_from_np(X, y = None, train = True, batch_size=64, shuffle=True
     return loader
 
 #TODO: define a model. Here, the basic structure is defined, but you need to fill in the details
-class Net(nn.Module):
+class Net(nn.Module): # input size = (64, 6144); output size = (64, 1)
     """
     The model class, which defines our classifier.
     """
@@ -159,9 +155,9 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(6144, 128)
         self.fc2 = nn.Linear(128, 64)
         self.fc3 = nn.Linear(64, 1)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU() # add non-linearity to model
         self.sigmoid = nn.Sigmoid()
-        self.dp = nn.Dropout(p=0.5) #help prevent overfitting, to add after each ReLU
+        self.dp = nn.Dropout(p=0.5) # help prevent overfitting, to add after each ReLU
 
     def forward(self, x):
         """
@@ -212,12 +208,13 @@ def train_model(train_loader):
     # on the validation data before submitting the results on the server. After choosing the 
     # best model, train it on the whole training data.
     
-    optimizer = optim.SGD(model.parameters(), lr=0.1, weight_decay=0.001) #working lr = 0.1, add weight decay to prevent overfitting.
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
+    optimizer = optim.SGD(model.parameters(), lr=0.1, weight_decay=0.001) # weight decay to prevent overfitting.
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True) # adapt learning rate to validation loss evolution
     criterion = nn.MSELoss()
 
     # TODO: proceed with training
     
+    # initialization of early stopping variables
     best_val_loss = float('inf')
     idx = 0
     idx_stop = 10
@@ -254,8 +251,9 @@ def train_model(train_loader):
         
         val_loss /= len(val_loader)
 
-        scheduler.step(val_loss)
+        scheduler.step(val_loss) # update learning rate if necessary
 
+        # stop training if validation loss stagnate or increase (prevent overfitting)
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             idx = 0
