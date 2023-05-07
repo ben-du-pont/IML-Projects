@@ -163,6 +163,40 @@ def create_loader_from_np(X, y = None, train = True, batch_size=64, shuffle=True
     return loader
 
 # TODO: define a model. Here, the basic structure is defined, but you need to fill in the details
+# class Net(nn.Module):
+#     """
+#     The model class, which defines our classifier.
+#     """
+#     def __init__(self):
+#         """
+#         The constructor of the model.
+#         """
+#         super().__init__()
+#         self.fc1 = nn.Linear(6144, 128)
+#         self.fc2 = nn.Linear(128, 64)
+#         self.fc3 = nn.Linear(64, 1)
+#         self.relu = nn.ReLU()
+#         self.sigmoid = nn.Sigmoid()
+
+#     def forward(self, x):
+#         """
+#         The forward pass of the model.
+
+#         input: x: torch.Tensor, the input to the model
+
+#         output: x: torch.Tensor, the output of the model
+#         """
+#         x.to(device)
+#         x = self.fc1(x)
+#         x = self.relu(x)
+#         x = self.fc2(x)
+#         x = self.relu(x)
+#         x = self.fc3(x)
+#         x = self.sigmoid(x)
+
+#         return x
+
+
 class Net(nn.Module):
     """
     The model class, which defines our classifier.
@@ -172,10 +206,17 @@ class Net(nn.Module):
         The constructor of the model.
         """
         super().__init__()
-        self.fc1 = nn.Linear(6144, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 1)
+        self.fc1 = nn.Linear(6144, 512)
+        self.bn1 = nn.BatchNorm1d(512)
+        self.fc2 = nn.Linear(512, 256)
+        self.bn2 = nn.BatchNorm1d(256)
+        self.fc3 = nn.Linear(256, 128)
+        self.bn3 = nn.BatchNorm1d(128)
+        self.fc4 = nn.Linear(128, 64)
+        self.bn4 = nn.BatchNorm1d(64)
+        self.fc5 = nn.Linear(64, 1)
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(p=0.5)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -188,10 +229,26 @@ class Net(nn.Module):
         """
         x.to(device)
         x = self.fc1(x)
+        x = self.bn1(x)
         x = self.relu(x)
+        x = self.dropout(x)
+        
         x = self.fc2(x)
+        x = self.bn2(x)
         x = self.relu(x)
+        x = self.dropout(x)
+        
         x = self.fc3(x)
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        
+        x = self.fc4(x)
+        x = self.bn4(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+
+        x = self.fc5(x)
         x = self.sigmoid(x)
 
         return x
@@ -217,7 +274,7 @@ def train_model(train_loader):
     model = Net()
     model.train()
     model.to(device)
-    n_epochs = 10
+    n_epochs = 50
     # TODO: define a loss function, optimizer and proceed with training. Hint: use the part 
     # of the training data as a validation split. After each epoch, compute the loss on the 
     # validation split and print it out. This enables you to see how your model is performing 
