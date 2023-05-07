@@ -59,21 +59,21 @@ def generate_embeddings():
     # TODO: Use the model to extract the embeddings. Hint: remove the last layers of the 
     # model to access the embeddings the model generates.
 
-    model = torch.nn.Sequential(*list(model.children())[:-1]) # takes all layers except the last one and build the model
+    new_model = torch.nn.Sequential(*list(model.children())[:-1]) # takes all layers except the last one and build the model
 
-    model.to(device)
-    model.eval()
+    new_model.to(device)
+    new_model.eval()
     
     # use ResNet50 model to extract feature embeddings and then store them
-    iter = 0
-    print(iter)
-    for images, _ in train_loader:
-        print(iter)
+    it = 0
+    print(it)
+    for imgs, _ in train_loader:
+        print(it)
         with torch.no_grad():
-            images = images.to(device)
-            features = model(images)
-            embeddings[iter*batch_size:(iter+1)*batch_size] = np.squeeze(features, axis=(2,3)).cpu() # np.squeeze to remove dim of size 1 from features dim=(64, 2048, 1, 1)
-        iter += 1
+            imgs = imgs.to(device)
+            features = new_model(imgs)
+            embeddings[batch_size*it:batch_size*(it+1)] = features.squeeze(dim=(2,3)).cpu() # np.squeeze to remove dim of size 1 from features dim=(64, 2048, 1, 1)
+        it += 1
 
     np.save('task3/dataset/embeddings.npy', embeddings)
 
@@ -100,8 +100,8 @@ def get_data(file, train=True):
     embeddings = np.load('task3/dataset/embeddings.npy')
     # TODO: Normalize the embeddings across the dataset
 
-    norm = np.linalg.norm(embeddings, axis=1, keepdims=True) # calculate Euclydian norm
-    embeddings = embeddings / norm # normalize
+    norm_l2 = np.linalg.norm(embeddings, axis=1, keepdims=True) # calculate Euclidian norm
+    embeddings = np.divide(embeddings, norm_l2) # normalize
 
     file_to_embedding = {}
     for i in range(len(filenames)):
@@ -152,11 +152,11 @@ class Net(nn.Module): # input size = (64, 6144); output size = (64, 1)
         The constructor of the model.
         """
         super().__init__()
-        self.fc1 = nn.Linear(6144, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 1)
-        self.relu = nn.ReLU() # add non-linearity to model
-        self.sigmoid = nn.Sigmoid()
+        self.fc1 = nn.Linear(6144, 1024)
+        self.fc2 = nn.Linear(1024, 128)
+        self.fc3 = nn.Linear(128, 1)
+        self.ReLU = nn.ReLU() # add non-linearity to model
+        self.sig = nn.Sigmoid()
         self.dp = nn.Dropout(p=0.5) # help prevent overfitting, to add after each ReLU
 
     def forward(self, x):
@@ -169,13 +169,13 @@ class Net(nn.Module): # input size = (64, 6144); output size = (64, 1)
         """
         x.to(device)
         x = self.fc1(x)
-        x = self.relu(x)
+        x = self.ReLU(x)
         x = self.dp(x)
         x = self.fc2(x)
-        x = self.relu(x)
+        x = self.ReLU(x)
         x = self.dp(x)
         x = self.fc3(x)
-        x = self.sigmoid(x)
+        x = self.sig(x)
 
         return x
 
@@ -208,64 +208,59 @@ def train_model(train_loader):
     # on the validation data before submitting the results on the server. After choosing the 
     # best model, train it on the whole training data.
     
-    optimizer = optim.SGD(model.parameters(), lr=0.1, weight_decay=0.001) # weight decay to prevent overfitting.
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True) # adapt learning rate to validation loss evolution
-    criterion = nn.MSELoss()
+    opti = optim.SGD(model.parameters(), lr=0.1, weight_decay=0.001) # weight decay to prevent overfitting.
+    sched = ReduceLROnPlateau(opti, patience=5, verbose=True) # adapt learning rate to validation loss evolution
+    loss_fun = nn.MSELoss()
 
     # TODO: proceed with training
     
     # initialization of early stopping variables
-    best_val_loss = float('inf')
+    val_loss_best = np.inf
     idx = 0
     idx_stop = 10
 
     for epoch in range(n_epochs):
-        epoch_loss = 0.0
+        train_loss = 0.0
         
         for [X, y] in train_loader:
 
-            optimizer.zero_grad()
+            opti.zero_grad()
             X = X.to(device)
             y = y.to(device)
 
-            outputs = model(X)
-            loss = criterion(outputs, y.float().unsqueeze(1))
+            predict = model(X)
+            loss = loss_fun(predict, y.float().unsqueeze(1))
             loss.backward()
-            optimizer.step()
-            epoch_loss += loss.item()
+            opti.step()
+            train_loss += loss.item()
 
             
-        epoch_loss /= len(train_loader)
+        train_loss = np.divide(train_loss, len(train_loader))
 
-        # Validation loop
+        # testing on the validation split
         model.eval()
         val_loss = 0.0
-        with torch.no_grad():
-            for [X_val, y_val] in val_loader:
-                X_val = X_val.to(device)
-                y_val = y_val.to(device)
+        with torch.no_grad(): # to increase computation speed
+            for [X, y] in val_loader:
+                X = X.to(device)
+                y = y.to(device)
                 
-                outputs = model(X_val)
-                loss = criterion(outputs, y_val.float().unsqueeze(1))
+                predict = model(X)
+                loss = loss_fun(predict, y.float().unsqueeze(1))
                 val_loss += loss.item()
         
-        val_loss /= len(val_loader)
+        val_loss = np.divide(val_loss, len(val_loader))
 
-        scheduler.step(val_loss) # update learning rate if necessary
+        sched.step(val_loss) # update learning rate if necessary
 
         # stop training if validation loss stagnate or increase (prevent overfitting)
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            idx = 0
-        else:
-            idx += 1
+        val_loss_best, idx = (val_loss, 0) if val_loss < val_loss_best else (val_loss_best, idx + 1)
 
-        print(f"Epoch {epoch+1}: training loss={epoch_loss:.4f}, validation loss={val_loss:.4f}")
+        print("epoch {}: train loss={:.4f}, val loss={:.4f}".format(epoch+1, train_loss, val_loss))
 
         if idx >= idx_stop:
-            print("Early stopping triggered")
+            print("Early stopping")
             break
-
 
     return model
 
