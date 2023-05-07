@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 from image_stats import get_mean_of_pixels
 
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") # MATEO (WINDOWS)
-# device = torch.device("cpu")
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu") # BEN (MAC OS)
 
 def generate_embeddings():
@@ -46,7 +45,7 @@ def generate_embeddings():
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batch_size,
                               shuffle=False,
-                              pin_memory=True, num_workers=16)
+                              pin_memory=True, num_workers=8)
 
     # TODO: define a model for extraction of the embeddings (Hint: load a pretrained model,
     #  more info here: https://pytorch.org/vision/stable/models.html)
