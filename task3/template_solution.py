@@ -14,6 +14,7 @@ from torchvision.models import ResNet50_Weights, resnet50
 from torchvision.models.inception import inception_v3, Inception_V3_Weights
 from torch import optim
 from torch.utils.data import random_split, DataLoader
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 import matplotlib.pyplot as plt
 
@@ -29,37 +30,31 @@ def generate_embeddings():
     the embeddings.
     """
     # TODO: define a transform to pre-process the images
-
-    # mean_red, mean_green, mean_blue, std_red , std_green, std_blue = get_mean_of_pixels()
-    # mean = [mean_red, mean_green, mean_blue]
-    # std = [std_red , std_green, std_blue]
-
-    mean = [0.485, 0.456, 0.406]
-    std = [0.229, 0.224, 0.225]
+    mean = [0.485, 0.456, 0.406] # from ImageNet dataset
+    std = [0.229, 0.224, 0.225] # from ImageNet dataset
 
     train_transforms = transforms.Compose([
     transforms.Resize((256,256)),  # Resize the image to 256x256 pixels
-    # transforms.CenterCrop((207,304)),  
     transforms.ToTensor(),  # Convert the image to a PyTorch tensor
-    transforms.Normalize(mean=mean, std= std)
+    transforms.Normalize(mean=mean, std=std)
     ])
 
     train_dataset = datasets.ImageFolder(root="task3/dataset/", transform=train_transforms)
     # Hint: adjust batch_size and num_workers to your PC configuration, so that you don't 
     # run out of memory
-    batch_size = 32
+    batch_size = 64
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batch_size,
                               shuffle=False,
-                              pin_memory=True, num_workers=8)
+                              pin_memory=True, num_workers=16)
 
     # TODO: define a model for extraction of the embeddings (Hint: load a pretrained model,
     #  more info here: https://pytorch.org/vision/stable/models.html)
 
+    #to explain
     model = resnet50(weights=ResNet50_Weights.DEFAULT)
-    # model = inception_v3(weights=Inception_V3_Weights.DEFAULT)
 
-    embedding_size = 2048
+    embedding_size = 2048 #to explain
 
     num_images = len(train_dataset)
     embeddings = np.zeros((num_images, embedding_size))
@@ -67,24 +62,14 @@ def generate_embeddings():
     # TODO: Use the model to extract the embeddings. Hint: remove the last layers of the 
     # model to access the embeddings the model generates.
 
+    #to explain
     modules = list(model.children())[:-1]
     model = torch.nn.Sequential(*modules)
 
     model.to(device)
     model.eval()
-
-
-    # i = 0
-    # for images, _ in train_loader:
-
-    #     print(np.transpose(images[0], (1,2,0)).shape)
-    #     print(images[i])
-    #     plt.imshow((images[i].detach().numpy().transpose(1, 2, 0)*255).astype(np.uint8))
-    #     plt.show()
-    #     i = i + 1
-    #     if i > 10:
-    #         break
     
+    #to explain
     iter = 0
     print(iter)
     for images, _ in train_loader:
@@ -162,41 +147,7 @@ def create_loader_from_np(X, y = None, train = True, batch_size=64, shuffle=True
                         pin_memory=True, num_workers=num_workers)
     return loader
 
-# TODO: define a model. Here, the basic structure is defined, but you need to fill in the details
-# class Net(nn.Module):
-#     """
-#     The model class, which defines our classifier.
-#     """
-#     def __init__(self):
-#         """
-#         The constructor of the model.
-#         """
-#         super().__init__()
-#         self.fc1 = nn.Linear(6144, 128)
-#         self.fc2 = nn.Linear(128, 64)
-#         self.fc3 = nn.Linear(64, 1)
-#         self.relu = nn.ReLU()
-#         self.sigmoid = nn.Sigmoid()
-
-#     def forward(self, x):
-#         """
-#         The forward pass of the model.
-
-#         input: x: torch.Tensor, the input to the model
-
-#         output: x: torch.Tensor, the output of the model
-#         """
-#         x.to(device)
-#         x = self.fc1(x)
-#         x = self.relu(x)
-#         x = self.fc2(x)
-#         x = self.relu(x)
-#         x = self.fc3(x)
-#         x = self.sigmoid(x)
-
-#         return x
-
-
+#TODO: define a model. Here, the basic structure is defined, but you need to fill in the details
 class Net(nn.Module):
     """
     The model class, which defines our classifier.
@@ -206,18 +157,12 @@ class Net(nn.Module):
         The constructor of the model.
         """
         super().__init__()
-        self.fc1 = nn.Linear(6144, 512)
-        self.bn1 = nn.BatchNorm1d(512)
-        self.fc2 = nn.Linear(512, 256)
-        self.bn2 = nn.BatchNorm1d(256)
-        self.fc3 = nn.Linear(256, 128)
-        self.bn3 = nn.BatchNorm1d(128)
-        self.fc4 = nn.Linear(128, 64)
-        self.bn4 = nn.BatchNorm1d(64)
-        self.fc5 = nn.Linear(64, 1)
+        self.fc1 = nn.Linear(6144, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 1)
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(p=0.5)
         self.sigmoid = nn.Sigmoid()
+        self.dp = nn.Dropout(p=0.5) #help prevent overfitting, to add after each ReLU
 
     def forward(self, x):
         """
@@ -229,26 +174,12 @@ class Net(nn.Module):
         """
         x.to(device)
         x = self.fc1(x)
-        x = self.bn1(x)
         x = self.relu(x)
-        x = self.dropout(x)
-        
+        x = self.dp(x)
         x = self.fc2(x)
-        x = self.bn2(x)
         x = self.relu(x)
-        x = self.dropout(x)
-        
+        x = self.dp(x)
         x = self.fc3(x)
-        x = self.bn3(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        
-        x = self.fc4(x)
-        x = self.bn4(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-
-        x = self.fc5(x)
         x = self.sigmoid(x)
 
         return x
@@ -275,20 +206,23 @@ def train_model(train_loader):
     model.train()
     model.to(device)
     n_epochs = 50
+
     # TODO: define a loss function, optimizer and proceed with training. Hint: use the part 
     # of the training data as a validation split. After each epoch, compute the loss on the 
     # validation split and print it out. This enables you to see how your model is performing 
     # on the validation data before submitting the results on the server. After choosing the 
     # best model, train it on the whole training data.
     
-    optimizer = optim.SGD(model.parameters(), lr=0.1)
-    # criterion = nn.BCEWithLogitsLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.1, weight_decay=0.001) #working lr = 0.1, add weight decay to prevent overfitting.
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
     criterion = nn.MSELoss()
-    # optimizer = optim.Adam(model.parameters(), lr=0.001)
-
 
     # TODO: proceed with training
     
+    best_val_loss = float('inf')
+    idx = 0
+    idx_stop = 10
+
     for epoch in range(n_epochs):
         epoch_loss = 0.0
         
@@ -321,12 +255,21 @@ def train_model(train_loader):
         
         val_loss /= len(val_loader)
 
+        scheduler.step(val_loss)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            idx = 0
+        else:
+            idx += 1
+
         print(f"Epoch {epoch+1}: training loss={epoch_loss:.4f}, validation loss={val_loss:.4f}")
 
-    # for epoch in range(n_epochs):
+        if idx >= idx_stop:
+            print("Early stopping triggered")
+            break
 
-    #     for [X, y] in train_loader:
-    #         pass
+
     return model
 
 def test_model(model, loader):
