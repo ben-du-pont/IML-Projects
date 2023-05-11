@@ -10,9 +10,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, TransformerMixin
 
 #----  added ------
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import GridSearchCV
 from torch.utils.data import DataLoader, TensorDataset
 import torch.optim as optim
+
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+warnings.filterwarnings('ignore', category=ConvergenceWarning)
+warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 
 def load_data():
@@ -50,6 +59,28 @@ class Net(nn.Module):
         self.fc3 = nn.Linear(128, 64)
         self.fc4 = nn.Linear(64, 1)
         self.dp = nn.Dropout(0.5)
+        # self.fc1 = nn.Sequential(
+        #     nn.Linear(input_dim, 256),
+        #     nn.ReLU(),
+        #     nn.BatchNorm1d(256),
+        #     nn.Dropout(0.5)
+        # )
+
+        # self.fc2 = nn.Sequential(
+        #     nn.Linear(256, 128),
+        #     nn.ReLU(),
+        #     nn.BatchNorm1d(128),
+        #     nn.Dropout(0.5)
+        # )
+
+        # self.fc3 = nn.Sequential(
+        #     nn.Linear(128, 64),
+        #     nn.ReLU(),
+        #     nn.BatchNorm1d(64),
+        #     nn.Dropout(0.5)
+        # )
+        
+        self.fc4 = nn.Linear(64, 1)
         #---------------
 
 
@@ -67,6 +98,10 @@ class Net(nn.Module):
         x = self.dp(torch.relu(self.fc2(x)))
         x = self.dp(torch.relu(self.fc3(x)))
         x = self.fc4(x)
+        # x = self.fc1(x)
+        # x = self.fc2(x)
+        # x = self.fc3(x)
+        # x = self.fc4(x)
         #-------------------
 
         return x.view(-1)
@@ -95,27 +130,85 @@ def make_feature_extractor(x, y, batch_size=256, eval_size=1000):
     
     # TODO: Implement the training loop. The model should be trained on the pretraining data. Use validation set 
     # to monitor the loss.
-    # Define loss function and optimizer
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters())
+    # Define a list of optimizers and criteria to try
+    # optimizer = optim.Adam(model.parameters())
+    # criterion = nn.MSELoss()
+    
+    # # Create data loaders
+    # train_data = TensorDataset(x_tr, y_tr)
+    # val_data = TensorDataset(x_val, y_val)
+    # train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    # val_loader = DataLoader(val_data, batch_size=batch_size)
 
-    # Create data loaders
-    train_data = TensorDataset(x_tr, y_tr)
-    val_data = TensorDataset(x_val, y_val)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_data, batch_size=batch_size)
+    # # Training loop
+    # for epoch in range(10): # for simplicity, we'll just do 100 epochs
+    #     print(epoch)
+    #     for inputs, targets in train_loader:
+    #         optimizer.zero_grad()
+    #         outputs = model(inputs)
+    #         loss = criterion(outputs, targets)
+    #         loss.backward()
+    #         optimizer.step()
 
-    # Training loop
-    for epoch in range(100): # for simplicity, we'll just do 100 epochs
-        for inputs, targets in train_loader:
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
+    optimizers = [optim.SGD, optim.Adam, optim.Adagrad]
+    learning_rates = [0.1, 0.01, 0.001]
+    weight_decays = [0.0, 0.01, 0.1]
+    criteria = [nn.MSELoss, nn.L1Loss, nn.HuberLoss] 
+
+    best_val_loss = float('inf')
+    best_optimizer = None
+    best_learning_rate = None
+    best_weight_decay = None
+    best_criterion = None
+
+    # Iterate over all combinations of optimizers, learning rates, and loss functions
+    for optimizer in optimizers:
+        print(optimizer)
+        for lr in learning_rates:
+            for weight_decay in weight_decays:
+                for criterion in criteria:
+                    # Initialize the optimizer and criterion
+                    opt = optimizer(model.parameters(), lr=lr)
+                    crit = criterion()
+
+                    # Create data loaders
+                    train_data = TensorDataset(x_tr, y_tr)
+                    val_data = TensorDataset(x_val, y_val)
+                    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+                    val_loader = DataLoader(val_data, batch_size=batch_size)
+
+                    # Training loop
+                    for epoch in range(50):  # for simplicity, we'll just do 100 epochs
+                        print(epoch)
+                        for inputs, targets in train_loader:
+                            opt.zero_grad()
+                            outputs = model(inputs)
+                            loss = crit(outputs, targets)
+                            loss.backward()
+                            opt.step()
+
+                    # Calculate validation loss
+                    val_loss = 0
+                    model.eval()
+                    with torch.no_grad():
+                        for inputs, targets in val_loader:
+                            outputs = model(inputs)
+                            loss = crit(outputs, targets)
+                            val_loss += loss.item() * inputs.size(0)
+                    val_loss /= len(val_loader.dataset)
+
+                    # If this is the best validation loss we've seen so far, save these hyperparameters
+                    if val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        best_optimizer = optimizer
+                        best_learning_rate = lr
+                        best_criterion = criterion
+
+    print("Best optimizer:", best_optimizer)
+    print("Best learning rate:", best_learning_rate)
+    print("Best criterion:", best_criterion)
 
     # ----------------------
-
 
 
     def make_features(x):
@@ -181,6 +274,8 @@ def get_regression_model():
     """
     # TODO: Implement the regression model. It should be able to be trained on the features extracted
     # by the feature extractor.
+    # model = LinearRegression()
+    # model = RandomForestRegressor(n_estimators=100, random_state=42) #0.28 accuracy
     model = LinearRegression()
     return model
 
@@ -196,26 +291,113 @@ if __name__ == '__main__':
     PretrainedFeatureClass = make_pretraining_class({"pretrain": feature_extractor})
     print('Feature extracted')
 
-    # regression model
-    regression_model = get_regression_model()
+    # # regression model
+    # regression_model = get_regression_model()
 
-    y_pred = np.zeros(x_test.shape[0])
-    # TODO: Implement the pipeline. It should contain feature extraction and regression. You can optionally
-    # use other sklearn tools, such as StandardScaler, FunctionTransformer, etc.
-    # Extract features from training and test data
+    # y_pred = np.zeros(x_test.shape[0])
+    # # TODO: Implement the pipeline. It should contain feature extraction and regression. You can optionally
+    # # use other sklearn tools, such as StandardScaler, FunctionTransformer, etc.
+    # # Extract features from training and test data
+    # x_train_transformed = PretrainedFeatureClass(feature_extractor="pretrain").transform(x_train)
+    # x_test_transformed = PretrainedFeatureClass(feature_extractor="pretrain").transform(x_test)
+
+    # # Train the regression model
+    # print('Regression Done')
+    # regression_model.fit(x_train_transformed, y_train)
+
+    # # Predict on test set
+    # print('Start Prediction')
+    # y_pred = regression_model.predict(x_test_transformed)
+    # # -------------------------------------
+
+    # assert y_pred.shape == (x_test.shape[0],)
+    # y_pred = pd.DataFrame({"y": y_pred}, index=x_test.index)
+    # y_pred.to_csv("results.csv", index_label="Id")
+    # print("Predictions saved, all done!")
+
+    models = [
+    {
+        'model': LinearRegression(),
+        'params': {}
+    },
+    {
+        'model': Ridge(),
+        'params': {
+            'alpha': [1, 0.1, 0.01, 0.001, 0.0001]
+        }
+    },
+    {
+        'model': RandomForestRegressor(random_state=42),
+        'params': {
+            'n_estimators': [10, 50, 100, 200],
+            'max_depth': [None, 5, 10, 20],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4]
+        }
+    },
+    {
+        'model': SVR(),
+        'params': {
+            'C': [0.1, 1, 10, 100],
+            'gamma': ['scale', 'auto'],
+            'kernel': ['linear', 'rbf']
+        }
+    },
+    {
+        'model': GradientBoostingRegressor(random_state=42),
+        'params': {
+            'n_estimators': [100, 200],
+            'learning_rate': [0.1, 0.01, 0.001],
+            'max_depth': [3, 5, 10],
+        }
+    },
+    {
+        'model': MLPRegressor(random_state=42),
+        'params': {
+            'hidden_layer_sizes': [(50,50,50), (50,100,50), (100,)],
+            'activation': ['tanh', 'relu'],
+            'solver': ['sgd', 'adam'],
+            'alpha': [0.0001, 0.05],
+            'learning_rate': ['constant','adaptive'],
+        }
+    }
+    ]
+
+    # Create a list to store the results
+    results = []
+
+    # Extract features from training data
     x_train_transformed = PretrainedFeatureClass(feature_extractor="pretrain").transform(x_train)
+
+    # Iterate over the models
+    for m in models:
+        # Perform grid search
+        grid = GridSearchCV(m['model'], m['params'], cv=5, scoring='neg_mean_squared_error')
+        grid.fit(x_train_transformed, y_train)
+        # Append results
+        results.append({
+            'model': m['model'].__class__.__name__,
+            'best_score': grid.best_score_,
+            'best_params': grid.best_params_,
+            'best_estimator': grid.best_estimator_
+        })
+
+    # Sort results by score and print
+    results = sorted(results, key=lambda x: x['best_score'], reverse=True)
+    for r in results:
+        print(f"Model: {r['model']}, Best Score: {r['best_score']}, Best Params: {r['best_params']}")
+
+    # Select the best model
+    best_model = results[0]['best_estimator']
+
+    # Extract features from test data
     x_test_transformed = PretrainedFeatureClass(feature_extractor="pretrain").transform(x_test)
 
-    # Train the regression model
-    print('Regression Done')
-    regression_model.fit(x_train_transformed, y_train)
+    # Predict on test set with the best model
+    y_pred = best_model.predict(x_test_transformed)
 
-    # Predict on test set
-    print('Start Prediction')
-    y_pred = regression_model.predict(x_test_transformed)
-    # -------------------------------------
-
+    # Make sure your prediction array is one-dimensional
     assert y_pred.shape == (x_test.shape[0],)
     y_pred = pd.DataFrame({"y": y_pred}, index=x_test.index)
-    y_pred.to_csv("results.csv", index_label="Id")
+    y_pred.to_csv("task4/results.csv", index_label="Id")
     print("Predictions saved, all done!")
