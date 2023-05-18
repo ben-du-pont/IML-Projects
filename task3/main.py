@@ -16,10 +16,6 @@ from torch import optim
 from torch.utils.data import random_split, DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-import matplotlib.pyplot as plt
-
-from image_stats import get_mean_of_pixels
-
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") # MATEO (WINDOWS)
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu") # BEN (MAC OS)
 
@@ -63,12 +59,11 @@ def generate_embeddings():
 
     new_model.to(device)
     new_model.eval()
-    
+        
     # use ResNet50 model to extract feature embeddings and then store them
     it = 0
-    print(it)
     for imgs, _ in train_loader:
-        print(it)
+        print("Generating embeddings, batch number:", it+1)
         with torch.no_grad():
             imgs = imgs.to(device)
             features = new_model(imgs)
@@ -98,6 +93,7 @@ def get_data(file, train=True):
                                          transform=None)
     filenames = [s[0].split('/')[-1].replace('.jpg', '') for s in train_dataset.samples]
     embeddings = np.load('task3/dataset/embeddings.npy')
+    
     # TODO: Normalize the embeddings across the dataset
 
     norm_l2 = np.linalg.norm(embeddings, axis=1, keepdims=True) # calculate Euclidian norm
@@ -143,6 +139,7 @@ def create_loader_from_np(X, y = None, train = True, batch_size=64, shuffle=True
     return loader
 
 #TODO: define a model. Here, the basic structure is defined, but you need to fill in the details
+
 class Net(nn.Module): # input size = (64, 6144); output size = (64, 1)
     """
     The model class, which defines our classifier.
@@ -191,16 +188,16 @@ def train_model(train_loader):
 
 
     dataset_size = len(train_loader.dataset)
-    val_size = int(0.2 * dataset_size)
+    val_size = int(0.05 * dataset_size)
     train_size = dataset_size - val_size
     train_set, val_set = random_split(train_loader.dataset, [train_size, val_size])
-    train_loader = DataLoader(train_set, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=32, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=128, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=128, shuffle=True)
 
     model = Net()
     model.train()
     model.to(device)
-    n_epochs = 50
+    n_epochs = 70
 
     # TODO: define a loss function, optimizer and proceed with training. Hint: use the part 
     # of the training data as a validation split. After each epoch, compute the loss on the 
@@ -256,7 +253,7 @@ def train_model(train_loader):
         # stop training if validation loss stagnate or increase (prevent overfitting)
         val_loss_best, idx = (val_loss, 0) if val_loss < val_loss_best else (val_loss_best, idx + 1)
 
-        print("epoch {}: train loss={:.4f}, val loss={:.4f}".format(epoch+1, train_loss, val_loss))
+        print("Training.... Epoch number: {} -- Training loss = {:.7f} -- Validation loss = {:.7f}".format(epoch+1, train_loss, val_loss))
 
         if idx >= idx_stop:
             print("Early stopping")
