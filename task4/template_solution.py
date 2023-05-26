@@ -15,6 +15,7 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import SVR
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader, TensorDataset
 import torch.optim as optim
 
@@ -80,7 +81,7 @@ class Net(nn.Module):
         #     nn.Dropout(0.5)
         # )
         
-        self.fc4 = nn.Linear(64, 1)
+        #self.fc4 = nn.Linear(64, 1)
         #---------------
 
 
@@ -161,6 +162,8 @@ def make_feature_extractor(x, y, batch_size=256, eval_size=1000):
     best_weight_decay = None
     best_criterion = None
 
+    #best are SGD,lr=0.001, huberloss
+
     # Iterate over all combinations of optimizers, learning rates, and loss functions
     for optimizer in optimizers:
         print(optimizer)
@@ -228,7 +231,7 @@ def make_feature_extractor(x, y, batch_size=256, eval_size=1000):
         x_tensor = torch.tensor(x, dtype=torch.float)
         with torch.no_grad():
             x_tensor = torch.tensor(x, dtype=torch.float)
-            features = model.fc1(x_tensor)
+            features = model.fc3(model.fc2(model.fc1(x_tensor))) #tryout
             return features.numpy()
         return x
         # -------------------------
@@ -308,13 +311,11 @@ if __name__ == '__main__':
     # # Predict on test set
     # print('Start Prediction')
     # y_pred = regression_model.predict(x_test_transformed)
-    # # -------------------------------------
+    
 
-    # assert y_pred.shape == (x_test.shape[0],)
-    # y_pred = pd.DataFrame({"y": y_pred}, index=x_test.index)
-    # y_pred.to_csv("results.csv", index_label="Id")
-    # print("Predictions saved, all done!")
-
+    #------------- test all regression models ------------------
+    scaler = StandardScaler()
+    
     models = [
     {
         'model': LinearRegression(),
@@ -368,6 +369,7 @@ if __name__ == '__main__':
 
     # Extract features from training data
     x_train_transformed = PretrainedFeatureClass(feature_extractor="pretrain").transform(x_train)
+    x_train_transformed = scaler.fit_transform(x_train_transformed)
 
     # Iterate over the models
     for m in models:
@@ -392,9 +394,11 @@ if __name__ == '__main__':
 
     # Extract features from test data
     x_test_transformed = PretrainedFeatureClass(feature_extractor="pretrain").transform(x_test)
-
+    x_test_transformed = scaler.transform(x_test_transformed)
+    
     # Predict on test set with the best model
     y_pred = best_model.predict(x_test_transformed)
+    #----------------------------------------------------------
 
     # Make sure your prediction array is one-dimensional
     assert y_pred.shape == (x_test.shape[0],)
