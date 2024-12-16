@@ -1,13 +1,14 @@
-# This serves as a template which will guide you through the implementation of this task. It is advised
-# to first read the whole template and get a sense of the overall structure of the code before trying to fill in any of the TODO gaps
-# First, we import necessary libraries:
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import KFold
 
 from sklearn.linear_model import Ridge
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import root_mean_squared_error
 
+# The goal of this subtask is to implement a 10-fold cross-validation for ridge regression.
+# This is done by loading the data, and then fitting the ridge regression on the training set for every lambda, and doing this for every fold created by KFold.
+# This gives us an average RMSE for our model for every lambda, averaged over all folds.
+# The results (i.e the RMSE we calculated for the 5 different lambdas) are saved in the required format in the results.csv file.
 
 def fit(X, y, lam):
     """
@@ -25,10 +26,8 @@ def fit(X, y, lam):
     ----------
     w: array of floats: dim = (13,), optimal parameters of ridge regression
     """
+
     w = np.zeros((13,))
-
-    # TODO: Enter your code here
-
     w = Ridge(alpha = lam,fit_intercept = False).fit(X,y).coef_
 
     assert w.shape == (13,)
@@ -53,9 +52,9 @@ def calculate_RMSE(w, X, y):
     
 
     RMSE = 0
-    # TODO: Enter your code here
+
     y_predict = X @ w
-    RMSE = mean_squared_error(y, y_predict, squared=False)
+    RMSE = root_mean_squared_error(y, y_predict)
 
     assert np.isscalar(RMSE)
     return RMSE
@@ -77,10 +76,8 @@ def average_LR_RMSE(X, y, lambdas, n_folds):
     ----------
     avg_RMSE: array of floats: dim = (5,), average RMSE value for every lambda
     """
-    RMSE_mat = np.zeros((n_folds, len(lambdas)))
 
-    # TODO: Enter your code here. Hint: Use functions 'fit' and 'calculate_RMSE' with training and test data
-    # and fill all entries in the matrix 'RMSE_mat'
+    RMSE_mat = np.zeros((n_folds, len(lambdas)))
 
     folds = KFold(n_folds)
 
@@ -97,19 +94,35 @@ def average_LR_RMSE(X, y, lambdas, n_folds):
     return avg_RMSE
 
 
-# Main function. You don't have to change this
+
 if __name__ == "__main__":
+
     # Data loading
+    print("\n")
+    print("Loading data...")
     data = pd.read_csv("task1a/train.csv")
     y = data["y"].to_numpy()
     data = data.drop(columns="y")
-    # print a few data samples
+
+    # Print sample of data
+    print("\n")
+    print("Data sample:")
     print(data.head())
 
     X = data.to_numpy()
+
     # The function calculating the average RMSE
     lambdas = [0.1, 1, 10, 100, 200]
     n_folds = 10
+    print("\n")
+    print("Calculating RMSE...")
     avg_RMSE = average_LR_RMSE(X, y, lambdas, n_folds)
+
+    print("\n")
+    print("Average RMSE for every lambda in", lambdas, ":")
+    print(avg_RMSE)
+
     # Save results in the required format
+    print("\n")
+    print("Saving results...")
     np.savetxt("./task1a/results.csv", avg_RMSE, fmt="%.12f")
