@@ -1,9 +1,9 @@
-# Introduction to machine learning - Four projects
+# Introduction to machine learning projects
 
 This repository consists of four projects that were part of the Introduction to Machine Learning lecture given by Prof. Dr. Andreas Krause and Prof. Dr. Fan Yang at ETH Zurich in spring semester 2023.
 These projects counted for 30% of the final grade of the course, and the remaining 70% was a final written exam. Full details of the course can be found on the official [webpage](https://las.inf.ethz.ch/teaching/introml-s23).
 
-The projects were done in groups of up to 3 students, and the entire code in this repository was written by [Benjamin Dupont](https://github.com/ben-du-pont) and [Mateo Hamel](https://github.com/hamelmateo). The code was written in Python and used libraries such as numpy, pandas, scikit-learn, and pytorch, sometimes using a base template provided by the course staff.
+The projects were done in groups of up to 3 students, and the entire code in this repository was written by our group consisting of [Benjamin Dupont](https://github.com/ben-du-pont) and [Mateo Hamel](https://github.com/hamelmateo). The code was written in Python and used libraries such as numpy, pandas, scikit-learn, and pytorch, sometimes using a base template provided by the course staff.
 
 ## Summary of Projects
 
@@ -20,14 +20,14 @@ The projects were done in groups of up to 3 students, and the entire code in thi
     - Applied transfer learning techniques to improve model accuracy on a new dataset.
 
 
-### Project 1: Linear Regression
+## Project 1: Linear Regression
 This first project was an introduction to linear regression and ridge regression and was subdivided into two tasks:
 
-#### 1a - Cross validation for ridge regression
+### 1a - Cross validation for ridge regression
 
 Implemented K-fold cross-validation with 10 folds to evaluate the performance of ridge regression for 5 different values of lambda. The RMSE was calculated for each lambda and averaged over the folds to determine the optimal regularization parameter. The process involved splitting the data into training and validation sets, fitting the model on the training set, and evaluating it on the validation set. The results were used to select the best lambda value that minimized the average RMSE.
 
-#### Training Data Format
+### Training Data Format
 
 The training data is provided in a CSV format with the following columns:
 
@@ -42,13 +42,45 @@ Exact implementation and datasets can be found in the [`task1a`](./task1a) folde
 
 
 
-#### 1b - Ridge regression with transformed features
-Need to transform the original features into linear, polynomial and exponential features and then use ridge regression to predict the target variable. The goal was to find the optimal weights of the regression model on these transofrmed features.
-The original features were transformed into polynomial and exponential features to capture non-linear relationships in the data. Specifically, polynomial features up to degree 3 and exponential features were generated. The ridge regression model was then trained on these transformed features to predict the target variable `y`.
+### 1b - Ridge regression with transformed features
+The goal was to transform the original features from the data and then use ridge regression to predict the target variable by finding the optimal weights of the regression model on these transformed features. Specifically, the transformation of the 5 input features of matrix $X$ (where $x_i$ denotes the $i$-th component of $X$) into 21 new features $\phi(X)$ was done as follows:
+
+1. **Linear Features**:
+    - $\phi_1(X) = x_1$
+    - $\phi_2(X) = x_2$
+    - $\phi_3(X) = x_3$
+    - $\phi_4(X) = x_4$
+    - $\phi_5(X) = x_5$
+
+2. **Quadratic Features**:
+    - $\phi_6(X) = x_1^2$
+    - $\phi_7(X) = x_2^2$
+    - $\phi_8(X) = x_3^2$
+    - $\phi_9(X) = x_4^2$
+    - $\phi_{10}(X) = x_5^2$
+
+3. **Exponential Features**:
+    - $\phi_{11}(X) = \exp(x_1)$
+    - $\phi_{12}(X) = \exp(x_2)$
+    - $\phi_{13}(X) = \exp(x_3)$
+    - $\phi_{14}(X) = \exp(x_4)$
+    - $\phi_{15}(X) = \exp(x_5)$
+
+4. **Cosine Features**:
+    - $\phi_{16}(X) = \cos(x_1)$
+    - $\phi_{17}(X) = \cos(x_2)$
+    - $\phi_{18}(X) = \cos(x_3)$
+    - $\phi_{19}(X) = \cos(x_4)$
+    - $\phi_{20}(X) = \cos(x_5)$
+
+5. **Constant Feature**:
+    - $\phi_{21}(X) = 1$
+
+The ridge regression model was then trained on these transformed features to predict the target variable $y$.
 
 The implementation involved the following steps:
 
-1. **Feature Transformation**: The original features were transformed into polynomial features and exponential features.
+1. **Feature Transformation**: The original features were transformed as described above to create a new feature matrix $\Phi$.
 2. **Model Training**: Ridge regression was applied to the transformed features. The model was trained using the training data provided.
 3. **Cross-Validation**: Cross-validation was performed to select the optimal regularization parameter lambda. The RMSE was calculated for each lambda and averaged over the folds to determine the optimal regularization parameter and therefore the best model.
 
@@ -64,7 +96,7 @@ Id, y, x1, x2, x3, x4, x5
 
 
 
-### Project 2: Prediction of electricity price in Switzerland
+## Project 2: Prediction of electricity price in Switzerland
 This project involved predicting the electricity price in Switzerland using data from other countries. The dataset included electricity prices from various countries across different seasons, with some missing values. The implementation steps were as follows:
 
 1. **Data Imputation**: Missing values in the dataset were imputed using statistical methods to ensure a complete dataset for model training.
@@ -89,21 +121,21 @@ The code for this project can be found in the [`task2`](./task2) folder. The tra
 
 
 
-### Project 3: Classification of food preferences
+## Project 3: Classification of food preferences
 
 This project aimed to classify food preferences based on image triplets. The task was to determine which of two images (B or C) is more similar to a reference image (A). The dataset consisted of images of food items, and the training data was provided in the form of triplets, where it was always true that image A was closer to image B than to image C.
 
-#### Data Format
+### Data Format
 
 The data was organized in the following structure:
 - **Dataset Folder**: `/food`
 - **Training Triplets**: Provided in a CSV file with columns `A`, `B`, and `C`, representing the file paths of the images in each triplet.
 
-#### Goal
+### Goal
 
 The goal was to train a model that could predict, for each triplet in the test set, whether image A is closer to image B than to image C. The predictions were binary, with `1` indicating that A is closer to B, and `0` indicating that A is closer to C.
 
-#### Implementation
+### Implementation
 
 The implementation involved the following steps:
 
@@ -136,6 +168,6 @@ The training data label is assumed to be `1` for all triplets, indicating that i
 
 The test data follows the same format, and the goal is to predict whether image A is closer to image B than to image C for each triplet.
 
-### Project 4: 
+## Project 4: 
 
 Transfer learning 
