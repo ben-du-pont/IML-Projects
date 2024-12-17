@@ -131,6 +131,10 @@ The data was organized in the following structure:
 - **Dataset Folder**: `/food`
 - **Training Triplets**: Provided in a CSV file with columns `A`, `B`, and `C`, representing the file paths of the images in each triplet.
 
+![Alt text](task3/dataset/food/00000.jpg)
+![Alt text](task3/dataset/food/00002.jpg)
+![Alt text](task3/dataset/food/00001.jpg)
+
 ### Goal
 
 The goal was to train a model that could predict, for each triplet in the test set, whether image A is closer to image B than to image C. The predictions were binary, with `1` indicating that A is closer to B, and `0` indicating that A is closer to C.
@@ -167,6 +171,8 @@ The training data is provided in a CSV format with the following columns:
 The training data label is assumed to be `1` for all triplets, indicating that image A is closer to image B than to image C.
 
 The test data follows the same format, and the goal is to predict whether image A is closer to image B than to image C for each triplet.
+
+![Alt text](assets/task3_training_curve.png)
 
 ## Project 4: Predicting HOMO-LUMO Gaps for Solar Cell Material Discovery
 
@@ -251,7 +257,6 @@ The final output of the pipeline is saved as a CSV file (`task4/results.csv`), c
 
 - **Transfer Learning:** Efficiently utilizes the large pretraining dataset to learn meaningful features, reducing the dependency on a large labeled training dataset.
 - **Feature Extraction:** The penultimate layer (64 features) provides a compact, meaningful representation of molecular data for downstream tasks.
-- **Scalability:** The approach can be adapted to other tasks involving molecular properties with minimal changes.
 
 ---
 
