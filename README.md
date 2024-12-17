@@ -168,6 +168,90 @@ The training data label is assumed to be `1` for all triplets, indicating that i
 
 The test data follows the same format, and the goal is to predict whether image A is closer to image B than to image C for each triplet.
 
-## Project 4: 
+## Project 4: Predicting HOMO-LUMO Gaps for Solar Cell Material Discovery
 
-Transfer learning 
+### Overview
+
+This project aims to identify materials suitable for solar cell manufacturing by predicting a molecule's HOMO-LUMO gap, a key feature that determines its usefulness in such applications. Directly testing for the HOMO-LUMO gap through computational chemistry simulations is time-consuming and computationally expensive. Instead, this project leverages machine learning to predict the HOMO-LUMO gap based on molecular structure.
+
+The challenge lies in the limited availability of labeled data: the dataset contains only 100 examples of molecules with their corresponding HOMO-LUMO gap. However, a separate pretraining dataset with 50,000 molecule-energy pairs (with LUMO energy values but not the HOMO-LUMO gap) is available. To address this, a transfer learning approach is employed using an autoencoder strategy.
+
+---
+
+### Problem Statement
+
+Predicting the HOMO-LUMO gap of molecules is a computationally intensive task. The gap determines a material's suitability for solar cell applications. Given:
+
+- **Pretraining data:** 50,000 molecule-to-HOMO/LUMO energy pairs (unlabeled for HOMO-LUMO gaps).
+- **Training data:** Only 100 molecule-to-HOMO-LUMO gap pairs (labeled).
+- **Test data:** 10,000 molecules for which the HOMO-LUMO gap needs to be predicted.
+
+The challenge lies in utilizing the pretraining dataset to improve predictions on the downstream task of HOMO-LUMO gap prediction.
+
+---
+
+### Approach
+
+To solve this problem, we employed a two-step pipeline combining transfer learning and regression:
+
+#### 1. **Pretraining: Feature Extraction**
+We use a feedforward neural network (MLP) with the following architecture:
+- **Input layer:** Matches the feature size of the input molecules.
+- **Hidden layers:** 
+  - Layer 1: 256 neurons, ReLU activation.
+  - Layer 2: 64 neurons, ReLU activation (penultimate layer).
+- **Output layer:** 1 neuron (to predict energy values in the pretraining task).
+
+The **penultimate layer (64 features)** is used as the reduced feature representation for the downstream task.
+
+**Training Details:**
+- Loss Function: Mean Squared Error (MSE).
+- Optimizer: Adam with a learning rate of 0.001.
+- Batch Size: 200.
+- Validation: 10% of the pretraining dataset is used for validation.
+- Stopping Criteria: Early stopping based on validation loss.
+
+#### 2. **Downstream Task: Ridge Regression**
+Once the features are extracted using the pretrained model, we:
+1. Normalize the features using `StandardScaler` from `sklearn`.
+2. Train a Ridge regression model on the training dataset with the extracted 64 features.
+3. Hyperparameter tuning: Ridge regression's `alpha` parameter is optimized using cross-validation over a predefined range ([0.1, 1.0, 10.0]).
+
+The test dataset is processed using the same pipeline, and predictions are made using the trained Ridge regression model.
+
+---
+
+### Results
+
+The final output of the pipeline is saved as a CSV file (`task4/results.csv`), containing the predicted HOMO-LUMO gaps for the test molecules.
+
+---
+
+### Files and Structure
+
+- **Code:** 
+  - `main.py`: Contains the complete implementation of the pretraining and regression pipeline.
+  - `MLPRegressor`: Custom class defining the feedforward neural network.
+  - `pretrain_model`: Function for training the neural network on the pretraining dataset.
+  - Ridge regression and feature normalization implemented using `sklearn`.
+
+- **Data:**
+  - `pretrain_features.csv.zip`: Features for pretraining.
+  - `pretrain_labels.csv.zip`: Labels (energies) for pretraining.
+  - `train_features.csv.zip`: Features for training.
+  - `train_labels.csv.zip`: Labels (HOMO-LUMO gaps) for training.
+  - `test_features.csv.zip`: Features for testing.
+
+- **Output:**
+  - `results.csv`: Predictions for the test molecules.
+
+---
+
+### Key Advantages
+
+- **Transfer Learning:** Efficiently utilizes the large pretraining dataset to learn meaningful features, reducing the dependency on a large labeled training dataset.
+- **Feature Extraction:** The penultimate layer (64 features) provides a compact, meaningful representation of molecular data for downstream tasks.
+- **Scalability:** The approach can be adapted to other tasks involving molecular properties with minimal changes.
+
+---
+
