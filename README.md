@@ -16,8 +16,8 @@ The projects were done in groups of up to 3 students, and the entire code in thi
 3. [Project 3: Classification of food preferences](#project-3-classification-of-food-preferences)
     - Created a classification model to determine food preferences based on image triplets. The project involved extracting embeddings from a pre-trained model and training a custom classifier neural network to determine for each image triplet (A, B, C) if A was closer to B or to C.
 
-4. [Project 4: Transfer learning](#project-4-transfer-learning)
-    - Applied transfer learning techniques to improve model accuracy on a new dataset.
+4. [Project 4: Predicting HOMO-LUMO Gaps for Solar Cell Material Discovery](#project-4-predicting-homo-lumo-gaps-for-solar-cell-material-discovery)
+    - Developed a pipeline combining transfer learning and an autoencoder-based feature extraction to predict HOMO-LUMO gaps for solar cell materials. Leveraged a large pretraining dataset for embedding generation and fine-tuned a Ridge regression model on a limited labeled dataset for accurate predictions.
 
 
 ## Project 1: Linear Regression
